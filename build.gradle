@@ -29,6 +29,7 @@ buildscript {
 
   ext.deps = [
       plugins: [
+          android: 'com.android.tools.build:gradle:3.2.0',
           kotlin: "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}",
           shadow: 'com.github.jengelman.gradle.plugins:shadow:4.0.1'
       ],
@@ -89,11 +90,15 @@ buildscript {
     classpath deps.animalSniffer.gradle
     classpath deps.maven.plugin.builder
     classpath deps.maven.plugin.publish
+    classpath "com.squareup.wire:wire-gradle-plugin:3.0.0-square18"
   }
 
   repositories {
     mavenCentral()
     gradlePluginPortal()
+    maven {
+      url 'https://maven.global.square/artifactory/square-public'
+    }
   }
 }
 
@@ -102,6 +107,7 @@ allprojects {
   version = VERSION_NAME
 
   repositories {
+    google()
     mavenCentral()
   }
 }
