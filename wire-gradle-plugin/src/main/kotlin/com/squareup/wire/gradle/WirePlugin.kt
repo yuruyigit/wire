@@ -32,6 +32,7 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import java.io.File
+import java.net.URI
 import javax.inject.Inject
 import com.android.build.gradle.BasePlugin as AndroidBasePlugin
 
@@ -273,6 +274,10 @@ class WirePlugin @Inject constructor(
               "Invalid path string: \"$path\". For individual files, use the closure syntax."
           )
         }
+      } else if (converted is URI && isURL(converted)) {
+        throw IllegalArgumentException(
+            "Invalid path string: \"$path\". URL dependencies are not allowed."
+        )
       } else {
         // assume it's a possible external dependency and let Gradle sort it out later...
         allPaths += path
@@ -281,6 +286,14 @@ class WirePlugin @Inject constructor(
 
     return allPaths
   }
+
+  private fun isURL(uri: URI) =
+    try {
+      uri.toURL()
+      true
+    } catch (e: Exception) {
+      false
+    }
 
   private fun applyKotlin() {
     TODO(

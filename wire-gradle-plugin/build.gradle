@@ -24,3 +24,12 @@ dependencies {
   testImplementation deps.junit
   testImplementation deps.assertj
 }
+
+def installProtoJar = tasks.register("installProtoJar", Copy) {
+  from fileTree("${projectDir.path}/src/test/libs")
+  into "${rootDir.path}/build/localMaven/com/squareup/wire/test/dinosaur-protos/1.0"
+}
+
+tasks.withType(Test) {
+  dependsOn(installProtoJar)
+}
