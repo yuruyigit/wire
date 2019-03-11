@@ -31,6 +31,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 import java.net.URI
 import javax.inject.Inject
@@ -39,16 +40,16 @@ import com.android.build.gradle.BasePlugin as AndroidBasePlugin
 class WirePlugin @Inject constructor(
   private val sourceDirectorySetFactory: SourceDirectorySetFactory
 ) : Plugin<Project> {
+  private var kotlin = false
+  private var android = false
+  private var java = false
+
   override fun apply(project: Project) {
     val logger = project.logger
 
     val extension = project.extensions.create(
         "wire", WireExtension::class.java, project, sourceDirectorySetFactory
     )
-
-    var kotlin = false
-    var android = false
-    var java = false
 
     project.plugins.all {
       logger.debug("plugin: $it")
@@ -84,8 +85,7 @@ class WirePlugin @Inject constructor(
 
       when {
         android -> applyAndroid(project, extension)
-        kotlin -> applyKotlin()
-        java -> applyJava(project, extension)
+        kotlin || java -> applyJvm(project, extension)
         else -> throw IllegalStateException("Impossible")
       }
     }
@@ -168,7 +168,7 @@ class WirePlugin @Inject constructor(
     }
   }
 
-  private fun applyJava(
+  private fun applyJvm(
     project: Project,
     extension: WireExtension
   ) {
@@ -198,14 +198,15 @@ class WirePlugin @Inject constructor(
 
     val targets = mutableListOf<Target>()
     val defaultBuildDirectory = "${project.buildDir}/generated/src/main/java"
-    val outDirs = mutableListOf<String>()
+    val javaOutDirs = mutableListOf<String>()
+    val kotlinOutDirs = mutableListOf<String>()
 
     val kotlinTarget = extension.kotlinTarget
     val javaTarget = extension.javaTarget ?: if (kotlinTarget != null) null else JavaTarget()
 
     javaTarget?.let { target ->
       val javaOut = target.outDirectory ?: defaultBuildDirectory
-      outDirs += javaOut
+      javaOutDirs += javaOut
       targets += Target.JavaTarget(
           elements = target.elements ?: listOf("*"),
           outDirectory = javaOut,
@@ -216,7 +217,7 @@ class WirePlugin @Inject constructor(
     }
     kotlinTarget?.let { target ->
       val kotlinOut = target.outDirectory ?: defaultBuildDirectory
-      outDirs += kotlinOut
+      kotlinOutDirs += kotlinOut
       targets += Target.KotlinTarget(
           elements = target.elements ?: listOf("*"),
           outDirectory = kotlinOut,
@@ -237,11 +238,20 @@ class WirePlugin @Inject constructor(
       task.description = "Generate Wire protocol buffer implementation for .proto files"
     }
 
-    //project.tasks.named("compileKotlin").configure{ it.dependsOn(task) }
-    val compileTask = project.tasks.named("compileJava") as TaskProvider<JavaCompile>
-    compileTask.configure {
-      it.source(outDirs)
-      it.dependsOn(wireTask)
+    extension.javaTarget?.let {
+      val compileTask = project.tasks.named("compileJava") as TaskProvider<JavaCompile>
+      compileTask.configure {
+        it.source(javaOutDirs)
+        it.dependsOn(wireTask)
+      }
+    }
+
+    extension.kotlinTarget?.let {
+      val compileTask = project.tasks.named("compileKotlin") as TaskProvider<KotlinCompile>
+      compileTask.configure {
+        it.source(kotlinOutDirs)
+        it.dependsOn(wireTask)
+      }
     }
   }
 
@@ -294,10 +304,4 @@ class WirePlugin @Inject constructor(
     } catch (e: Exception) {
       false
     }
-
-  private fun applyKotlin() {
-    TODO(
-        "not implemented"
-    ) //To change body of created functions use File | Settings | File Templates.
-  }
 }

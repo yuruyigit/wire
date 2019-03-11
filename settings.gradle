@@ -1,6 +1,7 @@
 include ':proto-pruner'
 include ':sample'
 //include ':sample-android'
+include ':sample-kotlin'
 include ':wire-codegen-sample'
 include ':wire-compiler'
 include ':wire-gradle-plugin'

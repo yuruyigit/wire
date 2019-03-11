@@ -1,0 +1,46 @@
+apply plugin: 'application'
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'com.squareup.wire'
+
+mainClassName = 'com.squareup.dinosaurs.Sample'
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
+
+repositories {
+  mavenCentral()
+  maven {
+    url 'https://maven.global.square/artifactory/square-public'
+  }
+}
+
+jar {
+  manifest {
+    attributes('Automatic-Module-Name': 'wire-sample-kotlin')
+  }
+}
+
+dependencies {
+  implementation "com.squareup.wire:wire-runtime:3.0.0-square18"
+}
+
+wire {
+  sourcePath {
+    srcDir 'src/main/proto'
+    include 'squareup/**'
+  }
+
+  // Keeps 'name' as the only field in 'Dinosaur'
+  // roots = ['squareup.dinosaurs.Dinosaur#name']
+
+  // Keeps all fields, except 'name', in 'Dinosaur'
+  // prunes = ['squareup.dinosaurs.Dinosaur#name']
+
+  // Both roots and prunes in an external file
+  // rules file("rules.txt")
+
+  kotlin {
+    javaInterop = true
+    outDirectory = "${buildDir}/generated/src/main/java"
+  }
+}
