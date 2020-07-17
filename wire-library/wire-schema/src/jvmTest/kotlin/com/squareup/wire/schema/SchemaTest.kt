@@ -1901,4 +1901,27 @@ class SchemaTest {
         .schema()
     assertThat(schema.getType("wire.Foo")).isNotNull()
   }
+
+  @Test
+  fun mapsCannotBeExtensions() {
+    try {
+      RepoBuilder()
+          .add("message.proto", """
+               |message Message {}
+               |extend Message {
+               |  map<int32, int32> map_int_int = 1;
+               |}
+               """.trimMargin()
+          )
+          .schema()
+      fail()
+    } catch (expected: SchemaException) {
+      assertThat(expected).hasMessage("""
+            |extension fields cannot be a map
+            |  for field map_int_int (/source/message.proto:3:3)
+            |  in message Message (/source/message.proto:1:1)
+            """.trimMargin()
+      )
+    }
+  }
 }
